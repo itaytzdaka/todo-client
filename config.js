@@ -4,7 +4,7 @@ export class Config{
 
     static _initialize(){
         if(process.env.NODE_ENV === "production"){
-            Config.serverUrl="http://localhost:3000/api";
+            Config.serverUrl="https://itay-todo.herokuapp.com/api";
         }
 
         else{
