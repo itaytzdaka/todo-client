@@ -1,20 +1,48 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useReducer } from 'react'
 import '/styles.css'
 import { ToDoForm } from '../components/ToDoForm';
 import { ToDoList } from '../components/ToDoList';
 import api from '../api/axios';
 
+const ACTIONS = {
+  FETCH: "fetch",
+  ADD_TODO: "add-todo",
+  TOGGLE_TODO: "toggle-todo",
+  DELETE_TODO: "delete-todo"
+}
+
+function reducer(state, action){
+  switch (action.type) {
+
+    case ACTIONS.FETCH:
+      return action.payload;
+
+    case ACTIONS.ADD_TODO:
+      return [...state, action.payload];
+
+    case ACTIONS.TOGGLE_TODO:
+      return state.map(todo=> todo._id === action.payload._id? {...todo, completed: !todo.completed} : todo);
+
+    case ACTIONS.DELETE_TODO:
+      return state.filter(todo=> todo._id === action.payload._id? false : true);
+  
+    default:
+      return state;
+  }
+}
 
 export default function App() {
 
-  const [todos, setTodos] = useState([]);
+  const [state, dispatch] = useReducer(reducer, []);
+
 
   useEffect(() => {
-    const todos = async () => {
+
+     async function todos() {
       try {
         const response = await api.get('/toDos');
-        console.log("toDos: ",response.data);
-        setTodos(response.data);
+        dispatch({type: ACTIONS.FETCH, payload: response.data});
+
       } catch (error) {
         console.log(error);
       }
@@ -27,41 +55,21 @@ export default function App() {
 
     try {
       const response = await api.post('/toDos', { title: title, completed: 0 });
-      console.log(response.data);
-
-      setTodos(currentTodos => {
-        return [...currentTodos, response.data];
-      });
+      dispatch({type: ACTIONS.ADD_TODO, payload: response.data});
 
     } catch (error) {
       console.log(error);
     }
-
-
+    
   }
 
   async function toggleTodo(_id) {
 
-    const todo = todos.find(doto => doto._id === _id);
-    todo.completed = todo.completed? 0: 1;
-
     try {
-      const response = await api.patch('/toDos/' + _id, todo);
 
-      setTodos(currentTodos => {
-
-        let todos = currentTodos.map(todo => {
-          if (todo._id === _id) {
-            return response.data;
-          }
-
-          return todo;
-        });
-        
-        todos = todos.sort( (todo1,todo2)=> todo1.completed - todo2.completed);
-        console.log("after sort: ",todos);
-        return todos;
-      });
+      const todo = state.find(obj=>obj._id===_id);
+      await api.patch('/toDos/' + _id, {...todo, completed: todo.completed? 0: 1});
+      dispatch({type: ACTIONS.TOGGLE_TODO, payload: { _id }});
 
     } catch (error) {
       console.log(error);
@@ -73,20 +81,18 @@ export default function App() {
 
     try {
       await api.delete('/toDos/' + _id);
+      dispatch({type: ACTIONS.DELETE_TODO, payload: { _id }});
+
     } catch (error) {
       console.log(error);
     }
-
-    setTodos(currentTodos => {
-      return currentTodos.filter(todo => todo._id !== _id);
-    });
   }
 
   return (
     <>
       <div className="container">
         <ToDoForm onSubmit={addToDo} />
-        <ToDoList todos={todos} toggleTodo={toggleTodo} deleteToDo={deleteToDo} />
+        <ToDoList todos={state} toggleTodo={toggleTodo} deleteToDo={deleteToDo} />
       </div>
 
     </>
