@@ -1,4 +1,6 @@
+
 export function ToDoItem({ completed, _id, title, toggleTodo, deleteToDo}) {
+
     return (
         <li key={_id}>
             <label>

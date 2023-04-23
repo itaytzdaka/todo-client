@@ -1,21 +1,32 @@
 import { useState } from "react";
+import { useContext } from "react";
+import { TodoContext, ACTIONS } from "../context/TodoContext";
+import api from '../api/axios';
 
-export function ToDoForm({onSubmit}) {
+export function ToDoForm() {
 
+    const [state, dispatch] = useContext(TodoContext);
     const [newItem, setNewItem] = useState("");
 
-    function handleSubmit(e) {
-        e.preventDefault();
-        if (newItem === "") return;
-    
-        onSubmit(newItem);
-    
-        //clear input
-        setNewItem("");
-      }
+    async function addToDo(e) {
+
+        try {
+            e.preventDefault();
+            if (newItem === "") return;
+
+            const response = await api.post('/toDos', { title: newItem, completed: 0 });
+            dispatch({ type: ACTIONS.ADD_TODO, payload: response.data });
+
+            //clear input
+            setNewItem("");
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
 
     return (
-        <form onSubmit={handleSubmit} className="new-item-form">
+        <form onSubmit={addToDo} className="new-item-form">
             <div className="form-row">
                 <label htmlFor="item">הוספת פריט:</label>
                 <input value={newItem} onChange={e => { setNewItem(e.target.value) }} type="text" name="item" _id="item" />
